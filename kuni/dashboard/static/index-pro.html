@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>control deck</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --glass: rgba(13,18,28,.72); --glass2: rgba(20,27,40,.85);
+    --line: rgba(120,180,220,.16); --text:#dbe7f4; --dim:#7e93ad;
+    --accent:#6ee7ff; --accent2:#c084fc; --good:#4ade80; --bad:#fb7185; --warn:#fbbf24;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html,body { height:100%; overflow:hidden; background:#050810; color:var(--text);
+    font:13px/1.45 "Segoe UI",system-ui,sans-serif; }
+  canvas#bg { position:fixed; inset:0; z-index:0; }
+
+  /* ── окна ─────────────────────────────────────── */
+  .win { position:fixed; z-index:10; min-width:260px; min-height:120px;
+    background:var(--glass); backdrop-filter:blur(14px);
+    border:1px solid var(--line); border-radius:14px;
+    box-shadow:0 24px 60px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.05);
+    display:none; flex-direction:column; overflow:hidden; }
+  .win.open { display:flex; }
+  .win.focused { border-color:rgba(110,231,255,.35); }
+  .win-head { display:flex; align-items:center; gap:8px; padding:9px 12px;
+    cursor:grab; border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg,rgba(255,255,255,.04),transparent); }
+  .win-head:active { cursor:grabbing; }
+  .win-title { font-size:11px; letter-spacing:2.5px; text-transform:uppercase; color:var(--dim); }
+  .win-dot { width:9px; height:9px; border-radius:50%; background:var(--accent);
+    box-shadow:0 0 10px var(--accent); }
+  .win-x { margin-left:auto; color:var(--dim); cursor:pointer; font-size:14px;
+    width:22px; height:22px; display:flex; align-items:center; justify-content:center;
+    border-radius:6px; } .win-x:hover { color:var(--bad); background:rgba(251,113,133,.1); }
+  .win-body { padding:12px; overflow:auto; flex:1; max-height:64vh; }
+  .win-body::-webkit-scrollbar { width:8px; } .win-body::-webkit-scrollbar-thumb {
+    background:rgba(120,180,220,.2); border-radius:4px; }
+  .rsz { position:absolute; right:2px; bottom:2px; width:16px; height:16px; cursor:nwse-resize;
+    color:var(--dim); font-size:11px; text-align:right; opacity:.5; }
+
+  .row { display:flex; gap:8px; align-items:center; padding:4px 0; }
+  .kv { color:var(--dim); font-size:11px; }
+  .bar { height:7px; border-radius:4px; background:rgba(255,255,255,.07); overflow:hidden; flex:1; }
+  .bar>i { display:block; height:100%; border-radius:4px;
+    background:linear-gradient(90deg,var(--accent),var(--accent2)); }
+  .pill { padding:2px 9px; border-radius:999px; font-size:10.5px; border:1px solid var(--line); }
+  .pill.on { color:var(--good); border-color:rgba(74,222,128,.3); }
+  .dim { color:var(--dim); } .good{color:var(--good)} .bad{color:var(--bad)}
+  .feed { font-size:11.5px; }
+  .feed .r { padding:4px 2px; border-bottom:1px solid rgba(120,180,220,.08);
+    display:flex; gap:8px; }
+  .feed .t { color:var(--dim); flex:0 0 46px; font-family:Consolas,monospace; font-size:10.5px; }
+  input,textarea,select { background:rgba(255,255,255,.05); border:1px solid var(--line);
+    color:var(--text); padding:7px 10px; border-radius:8px; font:inherit; width:100%; }
+  input:focus,textarea:focus { outline:1px solid rgba(110,231,255,.4); }
+  button { background:linear-gradient(135deg,rgba(110,231,255,.16),rgba(192,132,252,.16));
+    border:1px solid rgba(110,231,255,.35); color:var(--accent); padding:7px 14px;
+    border-radius:9px; cursor:pointer; font:inherit; font-weight:600; }
+  button:hover { background:rgba(110,231,255,.25); }
+  .btn2 { border-color:var(--line); color:var(--dim); }
+  .emoji-big { font-size:46px; filter:drop-shadow(0 0 14px rgba(110,231,255,.45)); }
+
+  /* ── hud ──────────────────────────────────────── */
+  #hud { position:fixed; top:18px; left:22px; z-index:5; pointer-events:none; }
+  #hud h1 { font-size:15px; letter-spacing:6px; font-weight:300; text-transform:uppercase; }
+  #hud .sub { font-size:10.5px; color:var(--dim); letter-spacing:2px; margin-top:4px; }
+  #toppills { position:fixed; top:18px; right:22px; z-index:5; display:flex; gap:7px; flex-wrap:wrap; max-width:50vw; }
+  #uiswitch { position:fixed; bottom:18px; right:22px; z-index:25; }
+  #uiswitch a { display:flex; align-items:center; gap:6px; padding:8px 14px; border-radius:12px;
+    background:var(--glass); border:1px solid var(--line); color:var(--dim); text-decoration:none;
+    font-size:11px; letter-spacing:1.5px; text-transform:uppercase; backdrop-filter:blur(12px); }
+  #uiswitch a:hover { color:var(--accent); border-color:rgba(110,231,255,.35); }
+  #hint { position:fixed; bottom:86px; left:50%; transform:translateX(-50%); z-index:5;
+    color:var(--dim); font-size:11px; letter-spacing:1.5px; pointer-events:none;
+    text-shadow:0 2px 10px #000; }
+
+  /* ── док ──────────────────────────────────────── */
+  #dock { position:fixed; bottom:18px; left:50%; transform:translateX(-50%); z-index:20;
+    display:flex; gap:6px; padding:8px 10px; border-radius:16px;
+    background:var(--glass); backdrop-filter:blur(16px);
+    border:1px solid var(--line); box-shadow:0 18px 50px rgba(0,0,0,.5); }
+  .dock-btn { display:flex; flex-direction:column; align-items:center; gap:3px;
+    width:64px; padding:8px 4px 6px; border-radius:12px; cursor:pointer;
+    border:1px solid transparent; background:transparent; color:var(--dim);
+    font:inherit; transition:all .15s; }
+  .dock-btn:hover { color:var(--text); background:rgba(110,231,255,.07);
+    border-color:var(--line); }
+  .dock-btn.active { color:var(--accent); background:rgba(110,231,255,.1);
+    border-color:rgba(110,231,255,.3); }
+  .dock-btn .ic { font-size:19px; line-height:1; }
+  .dock-btn .lb { font-size:8.5px; letter-spacing:1.2px; text-transform:uppercase; }
+
+  /* ── терминал ─────────────────────────────────── */
+  .term { background:rgba(2,6,10,.92); border-radius:10px; padding:10px 12px;
+    font:11.5px/1.55 Consolas,"Courier New",monospace; min-height:180px; max-height:46vh;
+    overflow:auto; border:1px solid rgba(120,180,220,.12); }
+  .term::-webkit-scrollbar { width:8px; } .term::-webkit-scrollbar-thumb {
+    background:rgba(120,180,220,.2); border-radius:4px; }
+  .term .ln { display:flex; gap:8px; white-space:pre-wrap; word-break:break-word; }
+  .term .tm { color:#3b5568; flex:0 0 46px; }
+  .term .cmd { color:#6ee7ff; } .term .out { color:#a8c0d8; }
+  .term .ok { color:#4ade80; } .term .err { color:#fb7185; } .term .dim { color:#5c7590; }
+  .cfg-sec { margin-bottom:14px; }
+  .cfg-sec h3 { font-size:10.5px; letter-spacing:2px; color:var(--accent);
+    text-transform:uppercase; padding:6px 0; border-bottom:1px solid var(--line); }
+  .cfg-field { display:grid; grid-template-columns: 46% 54%; gap:8px; padding:5px 0;
+    align-items:center; }
+  .cfg-field label { color:var(--dim); font-size:11.5px; overflow:hidden;
+    text-overflow:ellipsis; white-space:nowrap; }
+  .cfg-note { font-size:10.5px; padding:6px 10px; border-radius:8px; margin:8px 0; display:none; }
+  .cfg-note.ok { display:block; color:var(--good); background:rgba(74,222,128,.08); }
+  .cfg-note.err { display:block; color:var(--bad); background:rgba(251,113,133,.08); }
+  .chat { display:flex; justify-content:space-between; gap:8px; padding:6px 8px;
+    border-radius:8px; margin-bottom:4px; background:rgba(255,255,255,.03); align-items:center; }
+  .msg-line { padding:3px 0; border-bottom:1px solid rgba(120,180,220,.07); font-size:11.5px; }
+  .msg-line b { font-weight:600; }
+  .desire { display:flex; gap:8px; align-items:center; padding:4px 0; font-size:11.5px; }
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+
+<div id="hud">
+  <h1 id="charname">…</h1>
+  <div class="sub">CONTROL DECK · кнопки внизу открывают окна · тяни шапки, раскидывай</div>
+</div>
+<div id="toppills"></div>
+<div id="uiswitch"><a href="/">◂ классик-версия</a></div>
+<div id="hint"></div>
+<div id="windows"></div>
+<nav id="dock"></nav>
+
+<script>
+"use strict";
+/* ═════════ утилиты ═════════ */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmtT = ts => new Date((ts||0)*1000).toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+const fmtN = n => (n>=1e6?(n/1e6).toFixed(1)+"M":n>=1e3?(n/1e3).toFixed(1)+"k":String(n||0));
+let snapshot = null;
+
+/* ═════════ шейдерный фон (кинематографичный) ═════════ */
+(function background(){
+  const cv = $("#bg");
+  const gl = cv.getContext("webgl");
+  if (!gl) { cv.style.background="radial-gradient(1200px 700px at 30% 20%, #0a1626, #050810)"; return; }
+  const vs = `attribute vec2 p; void main(){ gl_Position=vec4(p,0.,1.); }`;
+  const fs = `precision mediump float; uniform float t; uniform vec2 r;
+  float n(vec2 p){ return sin(p.x)*sin(p.y); }
+  float flow(vec2 p){
+    float v=0., a=.5;
+    for(int i=0;i<5;i++){
+      v += a*n(p + t*.05*float(i+1) + vec2(t*.02, -t*.013));
+      p = mat2(1.6,1.2,-1.2,1.6)*p*.55; a*=.55;
+    } return v;
+  }
+  void main(){
+    vec2 uv = gl_FragCoord.xy / r.xy;
+    vec2 p = uv*3.2; p.x *= r.x/r.y;
+    float f = flow(p);
+    float f2 = flow(p*1.7 + 4.0 - t*.03);
+    vec3 base = mix(vec3(.012,.03,.06), vec3(.05,.02,.09), uv.y + f*.15);
+    vec3 teal = vec3(.06,.55,.72)*max(f,0.)*max(f,0.)*.34;
+    vec3 viol = vec3(.45,.18,.75)*max(f2,0.)*max(f2,0.)*.30;
+    vec3 col = base + teal + viol;
+    float vig = smoothstep(1.25,.35,distance(uv,vec2(.5,.45)));
+    col *= vig;
+    gl_FragColor = vec4(col,1.);
+  }`;
+  function sh(type, src){ const s=gl.createShader(type); gl.shaderSource(s,src); gl.compileShader(s); return s; }
+  const prog = gl.createProgram();
+  gl.attachShader(prog, sh(gl.VERTEX_SHADER,vs));
+  gl.attachShader(prog, sh(gl.FRAGMENT_SHADER,fs));
+  gl.linkProgram(prog); gl.useProgram(prog);
+  const buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
+  const loc = gl.getAttribLocation(prog,"p");
+  gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
+  const uT = gl.getUniformLocation(prog,"t"), uR = gl.getUniformLocation(prog,"r");
+  function frame(ms){
+    if (cv.width !== innerWidth || cv.height !== innerHeight){
+      cv.width = innerWidth; cv.height = innerHeight; gl.viewport(0,0,cv.width,cv.height);
+    }
+    gl.uniform1f(uT, ms/1000); gl.uniform2f(uR, cv.width, cv.height);
+    gl.drawArrays(gl.TRIANGLES,0,3);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+
+/* ═════════ оконный менеджер ═════════ */
+const WM = {
+  z: 10,
+  defs: {},
+  open(id){
+    const w = this.defs[id]; if (!w) return;
+    w.el.classList.add("open"); this.focus(id);
+  },
+  toggle(id){
+    const w = this.defs[id]; if (!w) return;
+    w.el.classList.contains("open") ? this.close(id) : this.open(id);
+  },
+  close(id){ this.defs[id]?.el.classList.remove("open"); },
+  focus(id){
+    document.querySelectorAll(".win").forEach(e=>e.classList.remove("focused"));
+    const w = this.defs[id]; if (!w) return;
+    w.el.classList.add("focused"); w.el.style.zIndex = ++this.z;
+  },
+  create(id, title, x, y, w, h, bodyEl){
+    const el = document.createElement("div");
+    el.className = "win"; el.style.left = x+"px"; el.style.top = y+"px";
+    el.style.width = w+"px"; el.style.minHeight = h+"px";
+    el.innerHTML = `<div class="win-head"><div class="win-dot"></div>
+      <div class="win-title">${esc(title)}</div><div class="win-x">✕</div></div>`;
+    const body = document.createElement("div"); body.className = "win-body";
+    body.appendChild(bodyEl); el.appendChild(body);
+    const rs = document.createElement("div"); rs.className="rsz"; rs.textContent="◢"; el.appendChild(rs);
+    $("#windows").appendChild(el);
+    // перетаскивание
+    const head = el.querySelector(".win-head");
+    head.addEventListener("mousedown", e => {
+      if (e.target.classList.contains("win-x")) return;
+      this.focus(id);
+      const sx = e.clientX - el.offsetLeft, sy = e.clientY - el.offsetTop;
+      const mv = ev => { el.style.left = Math.max(0, ev.clientX - sx)+"px";
+                         el.style.top  = Math.max(0, ev.clientY - sy)+"px"; };
+      const up = () => { removeEventListener("mousemove",mv); removeEventListener("mouseup",up); };
+      addEventListener("mousemove",mv); addEventListener("mouseup",up);
+    });
+    head.addEventListener("touchstart", e => {
+      const t = e.touches[0]; this.focus(id);
+      const sx = t.clientX - el.offsetLeft, sy = t.clientY - el.offsetTop;
+      const mv = ev => { el.style.left=(ev.touches[0].clientX-sx)+"px"; el.style.top=(ev.touches[0].clientY-sy)+"px"; };
+      const up = () => { removeEventListener("touchmove",mv); removeEventListener("touchend",up); };
+      addEventListener("touchmove",mv); addEventListener("touchend",up);
+    }, {passive:true});
+    // ресайз
+    rs.addEventListener("mousedown", e => {
+      e.stopPropagation(); this.focus(id);
+      const sw = el.offsetWidth, sh = el.offsetHeight, sx = e.clientX, sy = e.clientY;
+      const mv = ev => { el.style.width = Math.max(240, sw+ev.clientX-sx)+"px";
+                         el.querySelector(".win-body").style.maxHeight = Math.max(100, sh+ev.clientY-sy)+"px"; };
+      const up = () => { removeEventListener("mousemove",mv); removeEventListener("mouseup",up); };
+      addEventListener("mousemove",mv); addEventListener("mouseup",up);
+    });
+    el.querySelector(".win-x").onclick = () => this.close(id);
+    el.addEventListener("mousedown", () => this.focus(id));
+    this.defs[id] = { el, body };
+    return body;
+  }
+};
+
+/* ═════════ содержимое окон ═════════ */
+function el(html){ const d=document.createElement("div"); d.innerHTML=html; return d; }
+
+function winEmotions(){
+  const c = el(`<div>
+    <div style="display:flex;gap:16px;align-items:center;margin-bottom:10px">
+      <div class="emoji-big" id="w-em-emoji">🙂</div>
+      <div style="flex:1">
+        <div style="font-size:17px;font-weight:600" id="w-em-name">—</div>
+        <div class="dim" style="font-style:italic;font-size:11.5px" id="w-em-reason"></div>
+      </div></div>
+    <div class="row"><span class="kv" style="flex:0 0 92px">интенсивность</span><div class="bar"><i id="w-em-int"></i></div><span class="kv" id="w-em-int-t"></span></div>
+    <div class="row"><span class="kv" style="flex:0 0 92px">валентность</span><div class="bar"><i id="w-em-val"></i></div><span class="kv" id="w-em-val-t"></span></div>
+    <div class="row"><span class="kv" style="flex:0 0 92px">возбуждение</span><div class="bar"><i id="w-em-aro"></i></div><span class="kv" id="w-em-aro-t"></span></div>
+    <div class="row"><span class="kv" style="flex:0 0 92px">контроль</span><div class="bar"><i id="w-em-dom"></i></div><span class="kv" id="w-em-dom-t"></span></div>
+    <div class="kv" id="w-em-mood" style="margin-top:6px"></div>
+    <canvas id="w-em-spark" style="width:100%;height:56px;margin-top:8px"></canvas>
+    <div class="feed" id="w-em-hist" style="margin-top:6px"></div>
+  </div>`);
+  return c;
+}
+function winMemory(){
+  return el(`<div>
+    <input id="w-mem-q" placeholder="поиск по воспоминаниям…">
+    <div class="row" style="margin:8px 0"><span class="kv" id="w-mem-stats"></span></div>
+    <div class="feed" id="w-mem-list"></div>
+    <h3 style="font-size:10px;letter-spacing:2px;color:var(--accent2);margin:12px 0 6px">РАБОЧАЯ ПАМЯТЬ</h3>
+    <div class="dim" id="w-mem-wm" style="white-space:pre-wrap;font-size:11.5px"></div>
+  </div>`);
+}
+function winChats(){
+  return el(`<div>
+    <div id="w-ch-list"></div>
+    <div class="kv" id="w-ch-typing" style="margin-top:8px"></div>
+  </div>`);
+}
+function winMind(){
+  return el(`<div>
+    <div class="kv" style="letter-spacing:1.5px;margin-bottom:6px">ВСЕЛИТЬ МЫСЛЬ — примет за свою</div>
+    <textarea id="w-mind-input" rows="2" placeholder="мне скучно, хочу кого-нибудь подразнить…"></textarea>
+    <div class="row" style="margin:6px 0 10px"><button id="w-mind-send">вселить</button><span class="kv" id="w-mind-status"></span></div>
+    <div class="kv" style="letter-spacing:1.5px;margin-bottom:4px">ЖЕЛАНИЯ (растут сами)</div>
+    <div id="w-mind-desires" class="feed"></div>
+    <div class="kv" style="letter-spacing:1.5px;margin:10px 0 4px">ПОТОК МЫСЛЕЙ</div>
+    <div id="w-mind-stream" class="feed"></div>
+  </div>`);
+}
+function winConfig(){
+  return el(`<div>
+    <div class="cfg-note" id="w-cfg-note"></div>
+    <div id="w-cfg-form"></div>
+    <div class="row" style="margin-top:12px"><button id="w-cfg-save">сохранить конфиг</button>
+      <span class="kv">применится на лету (hot-reload)</span></div>
+  </div>`);
+}
+function winTools(){
+  return el(`<div>
+    <div class="row" style="margin-bottom:8px">
+      <span class="kv">вход</span><b id="w-tok-in" class="good">0</b>
+      <span class="kv">выход</span><b id="w-tok-out" class="good">0</b>
+      <span class="kv">воспоминаний</span><b id="w-tok-diary">0</b></div>
+    <div class="kv" style="letter-spacing:1.5px;margin:6px 0">ИНСТРУМЕНТЫ</div>
+    <div class="feed" id="w-tools"></div>
+    <div class="kv" style="letter-spacing:1.5px;margin:10px 0">LLM-ВЫЗОВЫ</div>
+    <div class="feed" id="w-llmcalls"></div>
+  </div>`);
+}
+function winFeed(){
+  return el(`<div><div class="feed" id="w-feed"></div></div>`);
+}
+function winReasoning(){
+  return el(`<div><div class="feed" id="w-reason"></div></div>`);
+}
+function winTerminal(){
+  return el(`<div>
+    <div class="term" id="w-term"><div class="ln"><span class="tm">--:--</span>
+      <span class="dim">терминал пуст — она пока ничего не правила в себе</span></div></div>
+    <div class="kv" style="margin-top:6px">здесь видно, что она делает со своим кодом:
+      правки, прогон тестов, автооткаты</div>
+  </div>`);
+}
+
+/* ═════════ создание окон ═════════ */
+const W = (id, title, x, y, w, h, content) => WM.create(id, title, x, y, w, h, content());
+const vw = innerWidth, vh = innerHeight;
+W("emotions","Чувства", 60, 90, 340, 320, winEmotions);
+W("memory","Память", vw-420, 110, 350, 320, winMemory);
+W("chats","С кем общается", 90, vh-360, 330, 260, winChats);
+W("mind","Мысли и желания", vw-400, vh-400, 350, 300, winMind);
+W("config","Конфиг", Math.max(40,vw/2-260), 70, 520, 430, winConfig);
+W("tools","Мозги и инструменты", vw/2-160, vh-370, 330, 270, winTools);
+W("feed","Живая лента", 40, vh/2-140, 320, 250, winFeed);
+W("reason","Размышления", vw-330, vh/2-120, 300, 230, winReasoning);
+W("terminal","Её терминал", vw/2+120, 100, 540, 260, winTerminal);
+["emotions","memory","chats","feed"].forEach(id=>WM.open(id));
+
+/* ═════════ док ═════════ */
+const DOCK = [
+  ["emotions","🩶","чувства"], ["memory","🧠","память"], ["chats","💬","чаты"],
+  ["mind","🖤","мысли"], ["tools","🔧","мозги"], ["terminal","🖥","терминал"],
+  ["config","⚙","конфиг"], ["feed","📡","лента"], ["reason","🤔","размышления"],
+];
+const dock = $("#dock");
+DOCK.forEach(([id, ic, lb]) => {
+  const b = document.createElement("button");
+  b.className = "dock-btn"; b.dataset.win = id;
+  b.innerHTML = `<span class="ic">${ic}</span><span class="lb">${lb}</span>`;
+  b.onclick = () => WM.toggle(id);
+  dock.appendChild(b);
+});
+function syncDock(){
+  document.querySelectorAll(".dock-btn").forEach(b =>
+    b.classList.toggle("active",
+      !!WM.defs[b.dataset.win]?.el.classList.contains("open")));
+}
+const _toggle = WM.toggle.bind(WM), _close = WM.close.bind(WM), _open = WM.open.bind(WM);
+WM.toggle = id => { _toggle(id); syncDock(); };
+WM.close  = id => { _close(id);  syncDock(); };
+WM.open   = id => { _open(id);   syncDock(); };
+
+/* ═════════ рендер данных в окна ═════════ */
+const eventFeed = [];
+function render(){
+  if (!snapshot) return;
+  const c = snapshot.character, e = c.emotion || {};
+  $("#charname").textContent = c.name || "…";
+  const mods = Object.entries(snapshot.modules||{});
+  $("#toppills").innerHTML = mods.map(([n,s])=>{
+    const ok = /author|started|ok|running/.test(String(s));
+    return `<span class="pill ${ok?"on":""}">${esc(n)} ${esc(s)}</span>`; }).join("");
+
+  // чувства
+  if (WM.defs.emotions){
+    const pct = e.intensity_pct ?? Math.round((e.intensity||0)*100);
+    $("#w-em-emoji").textContent = e.emoji||"🙂";
+    $("#w-em-name").textContent = (e.emotion||"—")+" · "+pct+"%";
+    $("#w-em-reason").textContent = e.reason||"";
+    $("#w-em-int").style.width=pct+"%";
+    $("#w-em-int-t").textContent=pct+"%";
+    const v = Number(e.valence||0);
+    $("#w-em-val").style.width=((v+1)/2*100)+"%";
+    $("#w-em-val").style.background = v>=.15?"var(--good)":v<=-.15?"var(--bad)":"var(--warn)";
+    $("#w-em-val-t").textContent=(v>0?"+":"")+v.toFixed(2);
+    const a = Number(e.arousal ?? .3);
+    $("#w-em-aro").style.width=(a*100)+"%"; $("#w-em-aro-t").textContent=a.toFixed(2);
+    const d = Number(e.dominance ?? .4);
+    const domEl = $("#w-em-dom");
+    if (domEl){
+      domEl.style.width=(d*100)+"%";
+      domEl.style.background = d>=.6?"var(--warn)":d<=.35?"var(--bad)":"var(--accent)";
+      $("#w-em-dom-t").textContent=d.toFixed(2);
+      const m = e.mood||{};
+      const mv = Number(m.valence||0);
+      $("#w-em-mood").innerHTML =
+        `настроение (фон, часы): валентность ${mv>0?"+":""}${mv.toFixed(2)}` +
+        ` · активация ${Number(m.arousal||0).toFixed(2)} · контроль ${Number(m.dominance||0).toFixed(2)}`;
+    }
+    drawSpark((snapshot.emotion_history||[]).map(h=>h.valence).reverse());
+    $("#w-em-hist").innerHTML = (snapshot.emotion_history||[]).slice(0,10).map(h=>
+      `<div class="r"><span class="t">${fmtT(h.ts)}</span><span>${esc(h.emoji)} ${esc(h.emotion)} ${h.intensity_pct??""}%</span>
+       <span class="dim" style="flex:1;font-size:10.5px">${esc(h.reason||"")}</span></div>`).join("");
+  }
+  // память
+  if (WM.defs.memory){
+    $("#w-mem-stats").textContent = `воспоминаний: ${(snapshot.diary||{}).entries??0} · векторов: ${(snapshot.diary||{}).embedded??0}`;
+    $("#w-mem-wm").textContent = (snapshot.working_memory||"").trim() || "пусто";
+  }
+  // чаты
+  if (WM.defs.chats){
+    const chats = snapshot.active_chats||[];
+    $("#w-ch-list").innerHTML = chats.map(ch=>{
+      const typing = (snapshot.typing||[]).some(t=>t.chat_id===ch.chat_id);
+      return `<div class="chat"><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+        ${typing?"✍️ ":""}${esc(ch.title||ch.chat_id)}</span>
+        <span class="dim" style="flex:0 0 90px;font-size:10.5px;text-align:right;overflow:hidden;text-overflow:ellipsis">${esc(ch.last||"")}</span>
+        <button class="btn2" style="padding:2px 8px;font-size:10px" onclick="proactive(${Number(ch.chat_id)},${JSON.stringify(String(ch.title||ch.chat_id)).replace(/"/g,"&quot;")})">✉</button></div>`;
+    }).join("") || `<span class="dim">пока никого</span>`;
+    const tp = (snapshot.typing||[])[0];
+    $("#w-ch-typing").textContent = tp ? "набирает: "+(tp.text_preview||"…") : "";
+  }
+  // мысли
+  if (WM.defs.mind){
+    const d = snapshot.desires||[];
+    $("#w-mind-desires").innerHTML = d.map(x=>
+      `<div class="desire"><span class="pill" style="color:var(--warn)">${esc(x.want)} ${Math.round(x.urge)}%</span>
+       <span style="flex:1;font-size:11px">${esc((x.text||"").slice(0,80))}</span></div>`).join("")
+      || `<span class="dim" style="font-size:11px">желаний нет</span>`;
+    $("#w-mind-stream").innerHTML = (snapshot.mind_stream||[]).slice(0,8).map(m=>
+      `<div class="r"><span class="t">${fmtT(m.ts)}</span><span style="font-style:italic">${esc(m.text||"")}</span></div>`).join("")
+      || `<span class="dim" style="font-size:11px">тишина</span>`;
+  }
+  // инструменты
+  if (WM.defs.tools){
+    $("#w-tok-in").textContent = fmtN((snapshot.token_totals||{}).input);
+    $("#w-tok-out").textContent = fmtN((snapshot.token_totals||{}).output);
+    $("#w-tok-diary").textContent = (snapshot.diary||{}).entries??0;
+    $("#w-tools").innerHTML = (snapshot.tools||[]).slice(0,10).map(t=>
+      t.phase==="call"
+      ? `<div class="r"><span class="t">${fmtT(t.ts)}</span><span style="color:var(--accent)">⚙ ${esc(t.name)}</span><span class="dim" style="font-size:10.5px">${esc(JSON.stringify(t.arguments||{}).slice(0,70))}</span></div>`
+      : `<div class="r"><span class="t">${fmtT(t.ts)}</span><span class="${t.ok?"good":"bad"}">✓ ${esc(t.name)}</span><span class="dim" style="font-size:10.5px">${esc((t.output||"").slice(0,70))}</span></div>`).join("");
+    $("#w-llmcalls").innerHTML = (snapshot.llm_calls||[]).slice(0,8).map(l=>
+      `<div class="r"><span class="t">${fmtT(l.ts)}</span><span>${esc(l.function)}</span>
+       <span class="dim">↓${fmtN(l.input_tokens)} ↑${fmtN(l.output_tokens)} ${esc(l.model||"")}</span></div>`).join("");
+  }
+  // размышления
+  if (WM.defs.reason){
+    $("#w-reason").innerHTML = (snapshot.reasoning||[]).slice(0,8).map(r=>
+      `<div class="r"><span class="t">${fmtT(r.ts)}</span><span style="font-style:italic">${esc((r.text||"").slice(0,180))}</span></div>`).join("")
+      || `<span class="dim">модель молчит внутри</span>`;
+  }
+  // терминал
+  if (WM.defs.terminal){
+    const term = $("#w-term");
+    const lines = snapshot.terminal || [];
+    if (lines.length){
+      term.innerHTML = lines.map(l =>
+        `<div class="ln"><span class="tm">${fmtT(l.ts)}</span>` +
+        `<span class="${esc(l.kind||"out")}">${esc(l.text||"")}</span></div>`).join("");
+      term.scrollTop = term.scrollHeight;
+    }
+  }
+  // лента
+  if (WM.defs.feed){
+    $("#w-feed").innerHTML = eventFeed.slice(0,40).map(ev=>{
+      let extra = "";
+      if (ev.topic==="llm.call") extra = `↓${fmtN(ev.payload.input_tokens)} ↑${fmtN(ev.payload.output_tokens)}`;
+      else if (ev.topic==="telegram.message"||ev.topic==="telegram.sent") extra = esc((ev.payload.text||"").slice(0,50));
+      else if (ev.topic==="emotion.changed") extra = esc(ev.payload.emoji+" "+ev.payload.emotion);
+      else if (ev.topic==="thought.stream") extra = esc((ev.payload.text||"").slice(0,60));
+      else if (ev.topic==="proactivity.acted") extra = esc(ev.payload.kind+" → "+ev.payload.chat_id);
+      return `<div class="r"><span class="t">${fmtT(ev.ts)}</span><span style="color:var(--accent);flex:0 0 120px;overflow:hidden;text-overflow:ellipsis">${esc(ev.topic)}</span><span>${extra}</span></div>`;
+    }).join("");
+  }
+}
+
+function drawSpark(values){
+  const cv = $("#w-em-spark"); if (!cv) return;
+  const ctx = cv.getContext("2d");
+  const w = cv.width = cv.offsetWidth||300, h = cv.height = 56;
+  ctx.clearRect(0,0,w,h);
+  ctx.strokeStyle="rgba(120,180,220,.25)"; ctx.beginPath(); ctx.moveTo(0,h/2); ctx.lineTo(w,h/2); ctx.stroke();
+  if (!values||values.length<2) return;
+  const step = w/(values.length-1);
+  const grad = ctx.createLinearGradient(0,0,w,0);
+  grad.addColorStop(0,"#6ee7ff"); grad.addColorStop(1,"#c084fc");
+  ctx.strokeStyle = grad; ctx.lineWidth=2; ctx.beginPath();
+  values.forEach((v,i)=>{ const y=h-((v+1)/2)*h; i?ctx.lineTo(i*step,y):ctx.moveTo(0,y); });
+  ctx.stroke();
+}
+
+/* ═════════ редактор конфига ═════════ */
+let cfgData = null;
+async function loadConfig(){
+  try {
+    const r = await fetch("/api/config"); const d = await r.json();
+    cfgData = d.config || null;
+  } catch { cfgData = null; }
+  if (!cfgData || !WM.defs.config) return;
+  const form = $("#w-cfg-form"); form.innerHTML = "";
+  const NICE = {general:"Общее", telegram:"Telegram", llm:"LLM", proxy:"Прокси",
+    dashboard:"Дашборд", metrics:"Метрики", images:"Картинки (SD)", voice:"Голос",
+    news:"Новости", diary:"Дневник", working_memory:"Рабочая память", proactivity:"Проктивность"};
+  for (const [sec, body] of Object.entries(cfgData)){
+    const box = document.createElement("div"); box.className="cfg-sec";
+    box.innerHTML = `<h3>${esc(NICE[sec]||sec)}</h3>`;
+    const addField = (path, key, val) => {
+      const row = document.createElement("div"); row.className="cfg-field";
+      let input;
+      if (typeof val === "boolean"){
+        input = `<input type="checkbox" data-cfg="${path}" ${val?"checked":""}>`;
+      } else if (typeof val === "number"){
+        input = `<input type="number" step="any" data-cfg="${path}" value="${val}">`;
+      } else if (Array.isArray(val)){
+        input = `<input type="text" data-cfg="${path}" data-list="1" value="${esc(val.join(", "))}">`;
+      } else {
+        const secret = /key|hash/i.test(key) ? "password" : "text";
+        input = `<input type="${secret}" data-cfg="${path}" value="${esc(val)}">`;
+      }
+      row.innerHTML = `<label title="${esc(key)}">${esc(key)}</label>${input}`;
+      box.appendChild(row);
+    };
+    for (const [k,v] of Object.entries(body)){
+      if (typeof v === "object" && v !== null && !Array.isArray(v)){
+        const sub = document.createElement("div"); sub.className="cfg-sec";
+        sub.innerHTML = `<h3 style="color:var(--accent2)">${esc(sec)}.${esc(k)}</h3>`;
+        for (const [k2,v2] of Object.entries(v)){
+          const row = document.createElement("div"); row.className="cfg-field";
+          row.innerHTML = `<label>${esc(k2)}</label><input data-cfg="${sec}.${k}.${k2}" value="${esc(v2)}">`;
+          sub.appendChild(row);
+        }
+        box.appendChild(sub);
+      } else addField(`${sec}.${k}`, k, v);
+    }
+    form.appendChild(box);
+  }
+}
+async function saveConfig(){
+  const note = $("#w-cfg-note");
+  document.querySelectorAll("#w-cfg-form [data-cfg]").forEach(inp => {
+    const path = inp.dataset.cfg.split(".");
+    let obj = cfgData;
+    for (let i=0;i<path.length-1;i++) obj = obj[path[i]];
+    const key = path[path.length-1];
+    if (inp.type === "checkbox") obj[key] = inp.checked;
+    else if (inp.dataset.list) obj[key] = inp.value.split(",").map(s=>s.trim()).filter(Boolean);
+    else if (inp.type === "number") obj[key] = Number(inp.value);
+    else obj[key] = inp.value;
+  });
+  note.className = "cfg-note"; note.textContent = "сохраняю…";
+  try {
+    const r = await fetch("/api/config", {method:"POST",
+      headers:{"Content-Type":"application/json"}, body: JSON.stringify({config: cfgData})});
+    const d = await r.json();
+    if (d.ok){ note.className="cfg-note ok"; note.textContent="✅ сохранено, применено на лету"; loadConfig(); }
+    else { note.className="cfg-note err"; note.textContent="❌ "+(d.error||"не прошло"); }
+  } catch(e){ note.className="cfg-note err"; note.textContent="❌ сеть"; }
+}
+
+/* ═════════ действия ═════════ */
+async function proactive(chatId, title){
+  const brief = prompt("Что она захочет ему написать? (её желание, не готовый текст)","");
+  if (brief === null) return;
+  try {
+    const r = await fetch("/api/proactive",{method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({chat_id:chatId, text:brief})});
+    const d = await r.json();
+    if (!d.ok) alert("не вышло: "+(d.error||"?"));
+  } catch { alert("дашборд не отвечает"); }
+}
+async function injectThought(){
+  const inp = $("#w-mind-input"), st = $("#w-mind-status");
+  const text = inp.value.trim(); if (!text) return;
+  st.textContent = "вселяю…";
+  try {
+    const r = await fetch("/api/think",{method:"POST",
+      headers:{"Content-Type":"application/json"}, body:JSON.stringify({text})});
+    const d = await r.json();
+    if (d.ok){ inp.value=""; st.textContent="✅ в её голове"; }
+    else st.textContent = "❌ "+(d.error||"");
+  } catch { st.textContent = "❌ сеть"; }
+  setTimeout(()=>st.textContent="", 3500);
+}
+async function loadDiary(q){
+  try {
+    const r = await fetch("/api/diary?q="+encodeURIComponent(q||"")+"&limit=30");
+    const items = await r.json();
+    $("#w-mem-list").innerHTML = items.length ? items.map(d=>
+      `<div class="r"><span class="t" style="flex:0 0 110px">${esc(d.when)}</span>
+       <span style="flex:1"><span class="dim" style="font-size:10px">[${esc(d.source)}] </span>${esc(d.text)}</span></div>`).join("")
+      : `<span class="dim">ничего</span>`;
+  } catch { $("#w-mem-list").innerHTML = `<span class="dim">дневник недоступен</span>`; }
+}
+
+document.addEventListener("click", e => {
+  if (e.target.id === "w-mind-send") injectThought();
+  if (e.target.id === "w-cfg-save") saveConfig();
+});
+document.addEventListener("keydown", e => {
+  if (e.key==="Enter" && e.ctrlKey && e.target.id==="w-mind-input") injectThought();
+});
+let memTimer=null;
+document.addEventListener("input", e => {
+  if (e.target.id === "w-mem-q"){ clearTimeout(memTimer);
+    memTimer = setTimeout(()=>loadDiary(e.target.value.trim()), 300); }
+});
+
+/* ═════════ живые данные ═════════ */
+async function refresh(){
+  try { snapshot = await (await fetch("/api/state")).json(); render(); }
+  catch {}
+}
+function connectWs(){
+  const ws = new WebSocket((location.protocol==="https:"?"wss://":"ws://")+location.host+"/ws");
+  ws.onopen = () => ws.send("ping");
+  ws.onmessage = m => {
+    const d = JSON.parse(m.data);
+    if (d.topic === "snapshot"){ snapshot = d.payload; render(); return; }
+    eventFeed.unshift({topic:d.topic, payload:d.payload||{}, ts:Date.now()/1000});
+    if (eventFeed.length>120) eventFeed.pop();
+    if (d.topic==="telegram.human.typing"||d.topic==="emotion.changed"
+        ||d.topic==="terminal.line") refresh();
+  };
+  ws.onclose = () => setTimeout(connectWs, 2000);
+}
+refresh(); loadConfig(); loadDiary(""); connectWs();
+setInterval(refresh, 5000);
+setInterval(()=>{ if (WM.defs.config?.el.classList.contains("open")) loadConfig(); }, 30000);
+</script>
+</body>
+</html>

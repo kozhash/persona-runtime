@@ -1,0 +1,110 @@
+# persona-runtime configuration. Копируй в config.toml и заполни.
+# Файл перечитывается на лету (hot reload) — правки применяются без перезапуска.
+
+[general]
+character_name = "Айя"
+character_nickname = "Ая"          # имя персонажа (можно менять на лету)
+papik_name = ""                  # как звать создателя
+papik_chat_id = 0                # твой chat_id (узнаешь через /chatid в личке с ней)
+telegram_api_id = 0              # https://my.telegram.org -> API development tools
+telegram_api_hash = ""
+data_dir = "data"
+prompts_dir = "prompts"
+language = "ru"
+
+[telegram]
+enabled = true
+session_name = "kuni"
+tdjson_path = ""                 # пусто = искать tdjson автоматически (или env KUNI_TDJSON_PATH)
+echo_mode = false                # true = отвечает диагностикой без LLM (проверка конвейера)
+typing_speed_cps = 14.0          # скорость набора (символов в секунду) для правдоподобия
+reply_delay_min_ms = 800         # пауза перед ответом
+reply_delay_max_ms = 4000
+read_delay_min_ms = 1500         # не читает мгновенно
+read_delay_max_ms = 9000
+night_from = 2                   # ночью офлайн (часы, локальное время)
+night_to = 9
+premium = false                  # влияет на советы про войсы/лимиты
+
+[llm]
+base_url = "http://localhost:11434/v1"   # любой OpenAI-совместимый: Ollama, vLLM, OpenRouter...
+api_key = "ollama"
+model = "qwen2.5:14b"            # основной мозг
+vision_model = "gemini-flash"    # multimodal-модель для распознавания картинок
+fallback_models = []             # модели по порядку при rate-limit/ошибке
+temperature = 0.8                # креативность ответов
+embed_model = "nomic-embed-text"
+context_soft_cap = 20000         # мягкий потолок контекста (в символах, ~4 символа/токен)
+
+# Отдельные API на каждую функцию (опционально).
+# Пустое поле = унаследовать из [llm]. Можно переопределить только то, что нужно:
+# например, свой url+key для эмбеддингов, другой модельный ряд для вижна.
+[llm.vision]
+# base_url = "https://другой-вижн-api.example/v1"
+# api_key = "sk-..."
+# model = "gemini-flash"
+# temperature = 0.3
+
+[llm.embedding]
+# base_url = "https://embeddings-провайдер.example/v1"
+# api_key = "sk-..."
+# model = "qwen/qwen3-embedding-8b"
+
+[llm.emotion]                    # оценка эмоций после каждого обмена
+# model = "какая-нибудь-дешёвая-быстрая"
+
+[llm.sleep]                      # ночная консолидация памяти
+# model = "умная-модель-для-слияния-воспоминаний"
+
+[proxy]
+enabled = true
+host = "127.0.0.1"
+port = 10434                     # OpenAI-совместимый прокси (VS Code Copilot и т.п.)
+logs_dir = "logs_proxy"
+
+[dashboard]
+enabled = true
+host = "127.0.0.1"
+port = 10435                     # live-дашборд: с кем общается, что набирает, эмоции
+
+[metrics]
+enabled = true
+port = 9464                      # Prometheus
+
+[images]                         # Stable Diffusion (AUTOMATIC1111 /sdapi/v1)
+enabled = true
+url = "http://localhost:7860"
+steps = 25
+
+[voice]
+whisper_url = "http://localhost:9000/v1/audio/transcriptions"  # пусто = войсы не расшифровываются
+tts_url = ""                     # OpenAI-совместимый /v1/audio/speech (OmniVoice и т.п.)
+tts_voice = ""                   # например "clone:..."
+tts_model = "omniv"
+
+[news]
+enabled = true
+channels = []                    # usernames каналов, на которые она подписана СВОИМ аккаунтом
+digest_interval_hours = 6
+
+[diary]
+consolidation_hour = 4           # во сколько "ложится спать" и консолидирует память
+similarity_threshold = 0.82      # порог похожести для слияния воспоминаний
+max_association_entries = 5      # сколько воспоминаний подмешивать в контекст
+
+[working_memory]
+max_age_days = 3                 # записи старше N дней вычищаются
+
+[proactivity]                       # её собственные инициативы
+enabled = true
+impulse_enabled = true              # A: импульс-петля (написать/фото/реакция)
+impulse_interval_minutes = 45
+thought_stream_enabled = true       # B: поток мыслей + желания (видно на дашборде)
+thought_interval_minutes = 15
+needs_enabled = true                # C: «скучаю» по людям
+needs_check_minutes = 10
+needs_threshold = 70.0
+miss_rate_per_hour = 6.0
+desire_threshold = 75.0
+max_actions_per_day = 6
+action_cooldown_minutes = 60

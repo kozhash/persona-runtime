@@ -1,0 +1,69 @@
+{
+  "neuromodulators": {
+    "dopamine": {
+      "baseline": 50,
+      "tau": 30,
+      "EC50": 40,
+      "hillN": 2.5,
+      "Emax": 30
+    },
+    "cortisol": {
+      "baseline": 20,
+      "tau": 60,
+      "EC50": 35,
+      "hillN": 3.0,
+      "Emax": 35
+    },
+    "serotonin": {
+      "baseline": 60,
+      "tau": 120,
+      "EC50": 45,
+      "hillN": 2.0,
+      "Emax": 25
+    },
+    "oxytocin": {
+      "baseline": 40,
+      "tau": 180,
+      "EC50": 40,
+      "hillN": 2.0,
+      "Emax": 25
+    },
+    "norepinephrine": {
+      "baseline": 30,
+      "tau": 10,
+      "EC50": 30,
+      "hillN": 3.0,
+      "Emax": 35
+    },
+    "gaba": {
+      "baseline": 55,
+      "tau": 45,
+      "EC50": 40,
+      "hillN": 2.0,
+      "Emax": 25
+    },
+    "acetylcholine": {
+      "baseline": 45,
+      "tau": 20,
+      "EC50": 35,
+      "hillN": 2.5,
+      "Emax": 28
+    }
+  },
+  "tickInterval": 30000,
+  "retrospectionInterval": 7200000,
+  "selfFeedbackAttenuation": 0.3,
+  "noiseBaseFraction": 0.15,
+  "llmClassifier": {
+    "model": "gpt-4o-mini",
+    "maxTokens": 150,
+    "temperature": 0,
+    "timeout": 5000,
+    "fallbackToKeywords": true
+  },
+  "webhookPort": 7749,
+  "stateFile": "./data/emotional_state.json",
+  "relationshipsFile": "./data/relationships.json",
+  "memoriesFile": "./data/emotional_memories.json",
+  "somaticFile": "./data/somatic_markers.json"
+}

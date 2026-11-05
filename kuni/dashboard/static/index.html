@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --bg:#0b0e14; --panel:#131824; --panel2:#1a2130; --border:#232c3d;
+    --text:#d7dce6; --dim:#7d8697; --accent:#6ee7ff; --accent2:#c084fc;
+    --good:#4ade80; --bad:#fb7185; --warn:#fbbf24;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text);
+    font:13.5px/1.5 "Segoe UI",system-ui,sans-serif; padding:18px; }
+  a { color:var(--accent); text-decoration:none; }
+  header { display:flex; justify-content:space-between; align-items:center; gap:12px;
+    margin-bottom:16px; flex-wrap:wrap; }
+  h1 { font-size:19px; font-weight:300; letter-spacing:5px; text-transform:uppercase; }
+  .pills { display:flex; flex-wrap:wrap; gap:7px; }
+  .pill { padding:3px 10px; border-radius:999px; font-size:11.5px;
+    border:1px solid var(--border); background:var(--panel); color:var(--dim); }
+  .pill.on { color:var(--good); border-color:rgba(74,222,128,.35); }
+  .grid { display:grid; gap:14px; grid-template-columns:repeat(12,1fr); }
+  .card { background:var(--panel); border:1px solid var(--border); border-radius:12px;
+    padding:14px; min-width:0; }
+  .card h2 { font-size:11px; text-transform:uppercase; color:var(--dim);
+    letter-spacing:1.8px; margin-bottom:10px; }
+  .span3{grid-column:span 3}.span4{grid-column:span 4}.span5{grid-column:span 5}
+  .span6{grid-column:span 6}.span8{grid-column:span 8}.span12{grid-column:span 12}
+  @media(max-width:1100px){.span3,.span4,.span5,.span6,.span8{grid-column:span 12}}
+
+  .row{display:flex;gap:8px;align-items:center;padding:3px 0}
+  .kv{color:var(--dim);font-size:11.5px}
+  .bar{height:7px;border-radius:4px;background:var(--panel2);overflow:hidden;flex:1}
+  .bar>i{display:block;height:100%;border-radius:4px;
+    background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  .dim{color:var(--dim)} .good{color:var(--good)} .bad{color:var(--bad)}
+  .mood{display:flex;gap:14px;align-items:center}
+  .mood .face{font-size:44px}
+  .mood .name{font-size:18px;font-weight:600}
+  .mood .reason{color:var(--dim);font-style:italic;font-size:12px;margin-top:2px}
+  .feed{max-height:300px;overflow:auto;font-size:12px}
+  .feed .r{padding:4px 2px;border-bottom:1px solid var(--border);display:flex;gap:8px}
+  .feed .t{color:var(--dim);flex:0 0 46px;font-family:Consolas,monospace;font-size:10.5px}
+  .chat{display:flex;justify-content:space-between;gap:8px;padding:6px 8px;border-radius:8px;
+    margin-bottom:4px;background:var(--panel2);align-items:center}
+  .chat .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  input,textarea{background:var(--panel2);border:1px solid var(--border);color:var(--text);
+    padding:7px 10px;border-radius:8px;font:inherit;width:100%}
+  input:focus,textarea:focus{outline:1px solid rgba(110,231,255,.4)}
+  button{background:rgba(110,231,255,.12);border:1px solid rgba(110,231,255,.35);
+    color:var(--accent);padding:6px 13px;border-radius:8px;cursor:pointer;font:inherit;font-weight:600}
+  button:hover{background:rgba(110,231,255,.22)}
+  .btn2{border-color:var(--border);color:var(--dim)}
+  .term{background:#05080d;border-radius:10px;padding:10px 12px;min-height:140px;max-height:300px;
+    overflow:auto;font:11.5px/1.55 Consolas,monospace;border:1px solid var(--border)}
+  .term .ln{display:flex;gap:8px;white-space:pre-wrap;word-break:break-word}
+  .term .tm{color:#3b5568;flex:0 0 46px}
+  .term .cmd{color:#6ee7ff}.term .out{color:#a8c0d8}.term .ok{color:#4ade80}
+  .term .err{color:#fb7185}.term .dim{color:#5c7590}
+  .cfg-sec{margin-bottom:14px}
+  .cfg-sec h3{font-size:10.5px;letter-spacing:2px;color:var(--accent);text-transform:uppercase;
+    padding:6px 0;border-bottom:1px solid var(--border)}
+  .cfg-field{display:grid;grid-template-columns:46% 54%;gap:8px;padding:4px 0;align-items:center}
+  .cfg-field label{color:var(--dim);font-size:11.5px;overflow:hidden;
+    text-overflow:ellipsis;white-space:nowrap}
+  .cfg-note{font-size:11.5px;padding:7px 10px;border-radius:8px;margin:8px 0;display:none}
+  .cfg-note.ok{display:block;color:var(--good);background:rgba(74,222,128,.08)}
+  .cfg-note.err{display:block;color:var(--bad);background:rgba(251,113,133,.08)}
+  .switch{display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:10px;
+    border:1px solid var(--border);color:var(--dim);font-size:11px;letter-spacing:1.5px;
+    text-transform:uppercase;background:var(--panel)}
+  .switch:hover{color:var(--accent);border-color:rgba(110,231,255,.35)}
+  .desire{display:flex;gap:8px;align-items:center;padding:3px 0;font-size:12px}
+  .em-row{display:flex;align-items:center;gap:8px;padding:4px 0;
+    border-bottom:1px solid var(--border);font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <h1 id="charname">…</h1>
+  <div class="pills" id="pills"></div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <button id="mode-btn" class="btn2" title="переключить режим ассистента">режим: …</button>
+    <a class="switch" href="/pro">pro-версия ▸</a>
+  </div>
+</header>
+
+<div class="grid">
+  <div class="card span5">
+    <h2>Что чувствует</h2>
+    <div class="mood">
+      <div class="face" id="m-emoji">🙂</div>
+      <div style="flex:1;min-width:0">
+        <div class="name" id="m-name">—</div>
+        <div class="reason" id="m-reason"></div>
+      </div>
+    </div>
+    <div class="row"><span class="kv" style="flex:0 0 100px">интенсивность</span><div class="bar"><i id="m-int"></i></div><span class="kv" id="m-int-t"></span></div>
+    <div class="row"><span class="kv" style="flex:0 0 100px">валентность</span><div class="bar"><i id="m-val"></i></div><span class="kv" id="m-val-t"></span></div>
+    <div class="row"><span class="kv" style="flex:0 0 100px">возбуждение</span><div class="bar"><i id="m-aro"></i></div><span class="kv" id="m-aro-t"></span></div>
+    <div class="row"><span class="kv" style="flex:0 0 100px">контроль</span><div class="bar"><i id="m-dom"></i></div><span class="kv" id="m-dom-t"></span></div>
+    <div class="kv" id="m-mood" style="margin-top:6px"></div>
+    <div class="feed" id="m-hist" style="margin-top:8px"></div>
+  </div>
+
+  <div class="card span4">
+    <h2>С кем общается</h2>
+    <div id="chats"><span class="dim">пока никого</span></div>
+    <div class="kv" id="typing" style="margin-top:8px"></div>
+  </div>
+
+  <div class="card span3">
+    <h2>Мозги</h2>
+    <div style="display:flex;gap:14px;margin-bottom:8px">
+      <div><div style="font-size:20px;font-weight:700" id="tok-in">0</div><div class="kv">вход токенов</div></div>
+      <div><div style="font-size:20px;font-weight:700" id="tok-out">0</div><div class="kv">выход</div></div>
+      <div><div style="font-size:20px;font-weight:700" id="diary-n">0</div><div class="kv">воспоминаний</div></div>
+    </div>
+    <div class="feed" id="llmcalls"></div>
+    <h2 style="margin-top:12px">Инструменты</h2>
+    <div class="feed" id="tools"></div>
+  </div>
+
+  <div class="card span4">
+    <h2>Мысли и желания</h2>
+    <textarea id="think-input" rows="2" placeholder="вселить мысль — она примет за свою…"></textarea>
+    <div class="row" style="margin:6px 0 10px"><button id="think-send">вселить</button>
+      <span class="kv" id="think-status"></span></div>
+    <div class="kv">ЖЕЛАНИЯ (растут сами)</div>
+    <div id="desires" style="margin:4px 0 10px"></div>
+    <div class="kv">ПОТОК МЫСЛЕЙ</div>
+    <div class="feed" id="stream"></div>
+  </div>
+
+  <div class="card span4">
+    <h2>Память</h2>
+    <input id="mem-q" placeholder="поиск по воспоминаниям…">
+    <div class="feed" id="mem-list" style="margin-top:8px"></div>
+    <h2 style="margin-top:12px">Рабочая память</h2>
+    <div class="dim" id="wm" style="white-space:pre-wrap;font-size:12px"></div>
+  </div>
+
+  <div class="card span4">
+    <h2>Её терминал</h2>
+    <div class="term" id="term"><div class="ln"><span class="tm">--:--</span>
+      <span class="dim">пока пусто — она не правило себя</span></div></div>
+  </div>
+
+  <div class="card span12">
+    <h2>Задачи (приватный канал-доска → она исполняет, техническое уходит антигравити)</h2>
+    <div class="row" style="margin-bottom:8px">
+      <span class="kv" id="tasks-channel"></span>
+      <button id="tasks-run" class="btn2">исполнить наступившие сейчас</button>
+    </div>
+    <div class="feed" id="tasks-list" style="max-height:260px"></div>
+  </div>
+
+  <div class="card span12">
+    <h2>Конфиг (всё настраивается, применится на лету)</h2>
+    <div class="cfg-note" id="cfg-note"></div>
+    <div id="cfg-form" style="columns:2;column-gap:28px"></div>
+    <div class="row" style="margin-top:12px"><button id="cfg-save">сохранить конфиг</button>
+      <span class="kv">валидация на сервере → config.toml → hot-reload</span></div>
+  </div>
+
+  <div class="card span6">
+    <h2>Размышления модели</h2>
+    <div class="feed" id="reason"></div>
+  </div>
+  <div class="card span6">
+    <h2>Живая лента</h2>
+    <div class="feed" id="feed"></div>
+  </div>
+
+  <div class="card span12">
+    <h2>Живой лог — что она делает прямо сейчас</h2>
+    <div class="row" style="margin-bottom:8px;gap:8px;flex-wrap:wrap">
+      <button class="btn2" id="lg-all">всё</button>
+      <button class="btn2" id="lg-tools">только инструменты</button>
+      <button class="btn2" id="lg-llm">только llm</button>
+      <button class="btn2" id="lg-msg">только сообщения</button>
+      <button class="btn2" id="lg-raw">показывать аргументы</button>
+      <span class="kv" id="lg-count"></span>
+      <label class="kv" style="margin-left:auto"><input type="checkbox" id="lg-follow" checked> следить за концом</label>
+    </div>
+    <div class="feed" id="livelog" style="max-height:520px;overflow-y:auto;font-family:ui-monospace,Consolas,monospace;font-size:11.5px"></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmtT=ts=>new Date((ts||0)*1000).toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+const fmtN=n=>(n>=1e6?(n/1e6).toFixed(1)+"M":n>=1e3?(n/1e3).toFixed(1)+"k":String(n||0));
+let snapshot=null; const eventFeed=[];
+
+function render(){
+  if(!snapshot) return;
+  const c=snapshot.character, e=c.emotion||{};
+  $("charname").textContent=c.name||"…";
+  const mods=Object.entries(snapshot.modules||{});
+  $("pills").innerHTML=mods.map(([n,s])=>{
+    const ok=/author|started|ok|running/.test(String(s));
+    return `<span class="pill ${ok?"on":""}">${esc(n)} ${esc(s)}</span>`}).join("");
+
+  const pct=e.intensity_pct??Math.round((e.intensity||0)*100);
+  $("m-emoji").textContent=e.emoji||"🙂";
+  $("m-name").textContent=(e.emotion||"—")+" · "+pct+"%"+
+    (e.secondary?" + "+e.secondary:"");
+  $("m-reason").textContent=e.reason||"";
+  $("m-int").style.width=pct+"%"; $("m-int-t").textContent=pct+"%";
+  const v=Number(e.valence||0);
+  const valEl=$("m-val"); valEl.style.width=((v+1)/2*100)+"%";
+  valEl.style.background=v>=.15?"var(--good)":v<=-.15?"var(--bad)":"var(--warn)";
+  $("m-val-t").textContent=(v>0?"+":"")+v.toFixed(2);
+  const a=Number(e.arousal??.3);
+  $("m-aro").style.width=(a*100)+"%"; $("m-aro-t").textContent=a.toFixed(2);
+  const d=Number(e.dominance??.4);
+  const domEl=$("m-dom"); domEl.style.width=(d*100)+"%";
+  domEl.style.background=d>=.6?"var(--warn)":d<=.35?"var(--bad)":"var(--accent)";
+  $("m-dom-t").textContent=d.toFixed(2);
+  const m=e.mood||{};
+  $("m-mood").textContent=`настроение-фон: v ${Number(m.valence||0).toFixed(2)} · `+
+    `a ${Number(m.arousal||0).toFixed(2)} · d ${Number(m.dominance||0).toFixed(2)}`;
+  $("m-hist").innerHTML=(snapshot.emotion_history||[]).slice(0,12).map(h=>
+    `<div class="em-row"><span>${esc(h.emoji)}</span><span style="flex:1;min-width:0">
+     <b>${esc(h.emotion)}</b> <span class="dim">${h.intensity_pct??""}% · d=${Number(h.dominance??0).toFixed(1)} · ${fmtT(h.ts)}</span>
+     <br><span class="dim">${esc(h.reason||"")}</span></span></div>`).join("");
+
+  const chats=snapshot.active_chats||[];
+  $("chats").innerHTML=chats.map(ch=>{
+    const typing=(snapshot.typing||[]).some(t=>t.chat_id===ch.chat_id);
+    const tpNow=(snapshot.typing||[]).find(t=>t.chat_id===ch.chat_id);
+    const last=tpNow?("набирает: "+(tpNow.text_preview||"…")):(ch.last||"");
+    return `<div class="chat"><span class="n">${typing?"✍️ ":""}${esc(ch.title||ch.chat_id)}</span>
+      <span class="dim" style="flex:0 0 220px;font-size:11px;text-align:right;
+        overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical">${esc(last)}</span>
+      <button class="btn2" style="padding:2px 8px;font-size:11px"
+        onclick="proactive(${Number(ch.chat_id)})">✉</button></div>`}).join("")
+    ||`<span class="dim">пока никого</span>`;
+  const tp=(snapshot.typing||[])[0];
+  $("typing").textContent=tp?"набирает: "+(tp.text_preview||"…"):"";
+
+  $("tok-in").textContent=fmtN((snapshot.token_totals||{}).input);
+  $("tok-out").textContent=fmtN((snapshot.token_totals||{}).output);
+  $("diary-n").textContent=(snapshot.diary||{}).entries??0;
+  $("llmcalls").innerHTML=(snapshot.llm_calls||[]).slice(0,8).map(l=>
+    `<div class="r"><span class="t">${fmtT(l.ts)}</span><span>${esc(l.function)}</span>
+     <span class="dim">↓${fmtN(l.input_tokens)} ↑${fmtN(l.output_tokens)}</span></div>`).join("");
+  $("tools").innerHTML=(snapshot.tools||[]).slice(0,10).map(t=>
+    t.phase==="call"
+    ?`<div class="r"><span class="t">${fmtT(t.ts)}</span><span class="good">⚙ ${esc(t.name)}</span>
+      <span class="dim">${esc(JSON.stringify(t.arguments||{}).slice(0,60))}</span></div>`
+    :`<div class="r"><span class="t">${fmtT(t.ts)}</span><span class="${t.ok?"good":"bad"}">✓ ${esc(t.name)}</span>
+      <span class="dim">${esc((t.output||"").slice(0,60))}</span></div>`).join("");
+
+  const d1=snapshot.desires||[];
+  $("desires").innerHTML=d1.map(x=>
+    `<div class="desire"><span class="pill" style="color:var(--warn)">${esc(x.want)} ${Math.round(x.urge)}%</span>
+     <span style="flex:1;font-size:11.5px">${esc((x.text||"").slice(0,80))}</span></div>`).join("")
+    ||`<span class="dim" style="font-size:11.5px">желаний нет</span>`;
+  $("stream").innerHTML=(snapshot.mind_stream||[]).slice(0,10).map(m=>
+    `<div class="r"><span class="t">${fmtT(m.ts)}</span><span style="font-style:italic">${esc(m.text||"")}</span></div>`).join("")
+    ||`<span class="dim" style="font-size:11.5px">тишина</span>`;
+
+  $("wm").textContent=(snapshot.working_memory||"").trim()||"пусто";
+
+  const lines=snapshot.terminal||[];
+  if(lines.length){
+    const term=$("term");
+    term.innerHTML=lines.map(l=>
+      `<div class="ln"><span class="tm">${fmtT(l.ts)}</span>`+
+      `<span class="${esc(l.kind||"out")}">${esc(l.text||"")}</span></div>`).join("");
+    term.scrollTop=term.scrollHeight;
+  }
+
+  // ассистент-режим и задачи
+  const asst=snapshot.assistant||{};
+  const modeBtn=$("mode-btn");
+  if(modeBtn){
+    const MODES={off:"персонаж выкл",companion:"компаньон",assistant:"АССИСТЕНТ"};
+    const NEXT={off:"companion",companion:"assistant",assistant:"off"};
+    modeBtn.textContent="режим: "+(MODES[asst.mode]||asst.mode);
+    if(!modeBtn.dataset.wired){
+      modeBtn.dataset.wired=1;
+      modeBtn.onclick=async()=>{
+        modeBtn.textContent="…";
+        const cur=(snapshot.assistant||{}).mode||"off";
+        const r=await fetch("/api/assistant",{method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({mode:NEXT[cur]||"off"})});
+        const d=await r.json();
+        if(!d.ok)alert(d.error||"не вышло");
+        refresh();
+      };
+    }
+  }
+  $("tasks-channel").textContent = asst.channel_id
+    ? ("канал-доска: "+asst.channel_id) : "канал не указан — впиши [assistant].channel_id в конфиге ниже";
+  const tasks=asst.tasks||[];
+  $("tasks-list").innerHTML = tasks.length ? tasks.map(t=>{
+    const st=t.status==="done"?"good":(t.status==="failed"?"bad":"");
+    const icon=t.status==="done"?"✅":(t.status==="failed"?"❌":(t.status==="running"?"⏳":"🕒"));
+    const who=t.assignee==="agy"?"антигравити":"сама";
+    const due=new Date((t.due_ts||0)*1000).toLocaleString("ru-RU",
+      {day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
+    return `<div class="r"><span class="t">#${t.id}</span>
+      <span style="flex:1;min-width:0"><b>${esc(t.text)}</b>
+      <span class="dim">· ${who} · до ${due}</span>
+      ${t.result?`<br><span class="dim ${st}" style="font-size:11px">${esc(t.result.slice(0,160))}</span>`:""}</span>
+      <span class="${st}">${icon} ${esc(t.status)}</span></div>`;
+  }).join("") : `<span class="dim">задач нет</span>`;
+
+  $("reason").innerHTML=(snapshot.reasoning||[]).slice(0,10).map(r=>
+    `<div class="em-row"><span style="flex:1;min-width:0">
+     <span class="dim" style="font-size:10.5px">${esc(r.model||"")} · ${esc(r.function||"")} · ${fmtT(r.ts)}</span>
+     <br><span style="font-style:italic">${esc((r.text||"").slice(0,200))}</span></span></div>`).join("")
+    ||`<span class="dim">модель молчит внутри</span>`;
+  renderLiveLog();
+  $("feed").innerHTML=eventFeed.slice(0,50).map(ev=>{
+    let x="";
+    if(ev.topic==="llm.call")x=`↓${fmtN(ev.payload.input_tokens)} ↑${fmtN(ev.payload.output_tokens)}`;
+    else if(ev.topic==="telegram.message"||ev.topic==="telegram.sent")x=esc((ev.payload.text||"").slice(0,50));
+    else if(ev.topic==="emotion.changed")x=esc(ev.payload.emoji+" "+ev.payload.emotion);
+    else if(ev.topic==="terminal.line")x=esc(ev.payload.text||"");
+    else if(ev.topic==="thought.stream")x=esc((ev.payload.text||"").slice(0,60));
+    return `<div class="r"><span class="t">${fmtT(ev.ts)}</span>
+      <span style="color:var(--accent);flex:0 0 130px;overflow:hidden;text-overflow:ellipsis">${esc(ev.topic)}</span>
+      <span>${x}</span></div>`}).join("");
+}
+
+async function proactive(chatId){
+  const brief=prompt("Что она захочет ему написать? (её желание)","");
+  if(brief===null)return;
+  const r=await fetch("/api/proactive",{method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({chat_id:chatId,text:brief})});
+  const d=await r.json(); if(!d.ok)alert("не вышло: "+(d.error||"?"));
+}
+async function inject(){
+  const inp=$("think-input"),st=$("think-status"),text=inp.value.trim();
+  if(!text)return; st.textContent="вселяю…";
+  const r=await fetch("/api/think",{method:"POST",
+    headers:{"Content-Type":"application/json"},body:JSON.stringify({text})});
+  const d=await r.json();
+  if(d.ok){inp.value="";st.textContent="✅ в голове";}else st.textContent="❌ "+(d.error||"");
+  setTimeout(()=>st.textContent="",3000);
+}
+$("think-send").onclick=inject;
+$("tasks-run").onclick=async()=>{
+  $("tasks-run").textContent="исполняю…";
+  await fetch("/api/assistant/run",{method:"POST"});
+  $("tasks-run").textContent="исполнить наступившие сейчас";
+  refresh();
+};
+$("think-input").addEventListener("keydown",e=>{
+  if(e.key==="Enter"&&(e.ctrlKey||e.metaKey))inject();});
+let memTimer=null;
+$("mem-q").addEventListener("input",e=>{
+  clearTimeout(memTimer);memTimer=setTimeout(()=>loadDiary(e.target.value.trim()),300);});
+async function loadDiary(q){
+  const r=await fetch("/api/diary?q="+encodeURIComponent(q||"")+"&limit=30");
+  const items=await r.json();
+  $("mem-list").innerHTML=items.length?items.map(d=>
+    `<div class="r"><span class="t" style="flex:0 0 108px">${esc(d.when)}</span>
+     <span style="flex:1"><span class="dim" style="font-size:10px">[${esc(d.source)}] </span>${esc(d.text)}</span></div>`).join("")
+    :`<span class="dim">ничего</span>`;
+}
+
+/* ── конфиг ── */
+let cfgData=null;
+async function loadConfig(){
+  const r=await fetch("/api/config");const d=await r.json();cfgData=d.config||null;
+  if(!cfgData)return;
+  const form=$("cfg-form");form.innerHTML="";
+  const NICE={general:"Общее",telegram:"Telegram",llm:"LLM",proxy:"Прокси",
+    dashboard:"Дашборд",metrics:"Метрики",images:"Картинки (SD)",voice:"Голос",
+    news:"Новости",diary:"Дневник",working_memory:"Рабочая память",proactivity:"Проктивность"};
+  for(const [sec,body] of Object.entries(cfgData)){
+    const box=document.createElement("div");box.className="cfg-sec";
+    box.innerHTML=`<h3>${esc(NICE[sec]||sec)}</h3>`;
+    const addField=(path,key,val)=>{
+      const row=document.createElement("div");row.className="cfg-field";
+      let input;
+      if(typeof val==="boolean")input=`<input type="checkbox" data-cfg="${path}" ${val?"checked":""}>`;
+      else if(typeof val==="number")input=`<input type="number" step="any" data-cfg="${path}" value="${val}">`;
+      else if(Array.isArray(val))input=`<input type="text" data-cfg="${path}" data-list="1" value="${esc(val.join(", "))}">`;
+      else input=`<input type="${/key|hash/i.test(key)?"password":"text"}" data-cfg="${path}" value="${esc(val)}">`;
+      row.innerHTML=`<label title="${esc(key)}">${esc(key)}</label>${input}`;
+      box.appendChild(row);};
+    for(const [k,v] of Object.entries(body)){
+      if(typeof v==="object"&&v!==null&&!Array.isArray(v)){
+        const sub=document.createElement("div");sub.className="cfg-sec";
+        sub.innerHTML=`<h3 style="color:var(--accent2)">${esc(sec)}.${esc(k)}</h3>`;
+        for(const [k2,v2] of Object.entries(v)){
+          const row=document.createElement("div");row.className="cfg-field";
+          row.innerHTML=`<label>${esc(k2)}</label><input data-cfg="${sec}.${k}.${k2}" value="${esc(v2)}">`;
+          sub.appendChild(row);}
+        box.appendChild(sub);
+      } else addField(`${sec}.${k}`,k,v);}
+    form.appendChild(box);}
+}
+async function saveConfig(){
+  const note=$("cfg-note");
+  document.querySelectorAll("#cfg-form [data-cfg]").forEach(inp=>{
+    const path=inp.dataset.cfg.split(".");let obj=cfgData;
+    for(let i=0;i<path.length-1;i++)obj=obj[path[i]];
+    const key=path[path.length-1];
+    if(inp.type==="checkbox")obj[key]=inp.checked;
+    else if(inp.dataset.list)obj[key]=inp.value.split(",").map(s=>s.trim()).filter(Boolean);
+    else if(inp.type==="number")obj[key]=Number(inp.value);
+    else obj[key]=inp.value;});
+  note.className="cfg-note";note.textContent="сохраняю…";
+  const r=await fetch("/api/config",{method:"POST",
+    headers:{"Content-Type":"application/json"},body:JSON.stringify({config:cfgData})});
+  const d=await r.json();
+  if(d.ok){note.className="cfg-note ok";note.textContent="✅ сохранено и применено";loadConfig();}
+  else{note.className="cfg-note err";note.textContent="❌ "+(d.error||"");}
+}
+$("cfg-save").onclick=saveConfig;
+
+/* ── живой лог ── */
+let lgFilter="all", lgRaw=false;
+const LG_FILTERS={
+  all:null,
+  tools:t=>t.startsWith("tool.")||t.startsWith("harness."),
+  llm:t=>t.startsWith("llm."),
+  msg:t=>t.startsWith("telegram.")||t.startsWith("autochat.")
+};
+function lgClass(t){
+  if(t.startsWith("tool.called"))return "good";
+  if(t.startsWith("tool.result"))return "";
+  if(t.startsWith("llm.reasoning"))return "warn";
+  if(t.includes("error")||t.includes("denied")||t.includes("refused"))return "bad";
+  if(t.startsWith("llm."))return "good";
+  return "dim";
+}
+function lgBody(topic,p){
+  const l=[];
+  if(topic==="tool.called"){
+    l.push(`<b>⚙ ${esc(p.name)}</b>`);
+    if(p.arguments&&Object.keys(p.arguments).length){
+      const a=lgRaw?JSON.stringify(p.arguments,null,1):JSON.stringify(p.arguments);
+      l.push(`<div class="dim" style="white-space:pre-wrap;word-break:break-word">${esc(a)}</div>`);
+    }
+  } else if(topic==="tool.result"){
+    l.push(`<span class="${p.ok?"good":"bad"}">${p.ok?"✓":"✗"} ${esc(p.name)}</span>`);
+    if(p.output)l.push(`<div class="dim" style="white-space:pre-wrap;word-break:break-word">${esc(String(p.output).slice(0,lgRaw?2000:300))}</div>`);
+    if(p.artifact)l.push(`<div class="dim">📎 ${esc(p.artifact)}</div>`);
+  } else if(topic==="llm.reasoning"){
+    l.push(`<span class="warn">💭 ${esc(p.model||"")}</span>`);
+    l.push(`<div style="font-style:italic;white-space:pre-wrap">${esc(String(p.text||"").slice(0,lgRaw?2000:400))}</div>`);
+  } else if(topic==="llm.call"){
+    l.push(`<span class="good">🧠 ${esc(p.function||"chat")}</span> <span class="dim">${esc(p.model||"")} ↓${fmtN(p.input_tokens)} ↑${fmtN(p.output_tokens)}</span>`);
+  } else if(topic.startsWith("telegram.")){
+    l.push(`<span class="dim">${esc(topic.replace("telegram.",""))}</span> ${esc(String(p.text||p.data||p.emoji||"").slice(0,lgRaw?800:200))}`);
+  } else if(topic.startsWith("harness.")){
+    l.push(`<span class="warn">🔧 ${esc(topic)}</span> <span class="dim">${esc(JSON.stringify(p).slice(0,lgRaw?800:200))}</span>`);
+  } else {
+    l.push(`<span class="dim">${esc(topic)}</span> ${esc(JSON.stringify(p).slice(0,lgRaw?400:120))}`);
+  }
+  return l.join(" ");
+}
+function renderLiveLog(){
+  const box=$("livelog");if(!box||!snapshot)return;
+  const pred=LG_FILTERS[lgFilter];
+  const rows=(snapshot.log||[]).filter(e=>!pred||pred(e.topic));
+  box.innerHTML=rows.slice(-250).map(e=>
+    `<div class="r" style="align-items:flex-start"><span class="t">${fmtT(e.ts)}</span>
+      <span style="flex:1;min-width:0">${lgBody(e.topic,e.payload||{})}</span></div>`).join("")
+    ||`<span class="dim">пока тихо</span>`;
+  $("lg-count").textContent=rows.length+" событий";
+  if($("lg-follow")?.checked)box.scrollTop=box.scrollHeight;
+}
+function bindLogButtons(){
+  const set=(id,f)=>{const b=$(id);if(b)b.onclick=()=>{lgFilter=f;renderLiveLog();};};
+  set("lg-all","all");set("lg-tools","tools");set("lg-llm","llm");set("lg-msg","msg");
+  const raw=$("lg-raw");
+  if(raw)raw.onclick=()=>{lgRaw=!lgRaw;raw.style.opacity=lgRaw?"1":"0.6";renderLiveLog();};
+}
+bindLogButtons();
+
+/* ── живые данные ── */
+async function refresh(){try{snapshot=await(await fetch("/api/state")).json();render();}catch{}}
+function connectWs(){
+  const ws=new WebSocket((location.protocol==="https:"?"wss://":"ws://")+location.host+"/ws");
+  ws.onopen=()=>ws.send("ping");
+  ws.onmessage=m=>{
+    const d=JSON.parse(m.data);
+    if(d.topic==="snapshot"){snapshot=d.payload;render();return;}
+    eventFeed.unshift({topic:d.topic,payload:d.payload||{},ts:Date.now()/1000});
+    if(eventFeed.length>150)eventFeed.pop();
+    if(["telegram.human.typing","emotion.changed","terminal.line","thought.stream"]
+       .includes(d.topic))refresh();
+    else if(d.topic.startsWith("tool.")||d.topic.startsWith("llm.")||
+            d.topic.startsWith("harness."))refresh();};
+  ws.onclose=()=>setTimeout(connectWs,2000);
+}
+refresh();loadConfig();loadDiary("");connectWs();
+setInterval(refresh,5000);</script>
+</body>
+</html>

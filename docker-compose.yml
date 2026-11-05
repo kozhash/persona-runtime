@@ -1,0 +1,63 @@
+version: "3.8"
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    ports: ["11434:11434"]
+    volumes: ["ollama:/root/.ollama"]
+    restart: unless-stopped
+    # GPU (раскомментируй при наличии nvidia):
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
+  stable-diffusion:
+    image: ghcr.io/ashleykleynhans/stable-diffusion-webui:latest
+    ports: ["7860:7860"]
+    volumes: ["sd:/stable-diffusion-webui/models"]
+    environment:
+      - CLI_ARGS=--api --listen
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  whisper:
+    image: fedirz/faster-whisper-server:latest
+    ports: ["9000:8000"]
+    environment:
+      - WHISPER__MODEL=Systran/faster-whisper-medium
+    restart: unless-stopped
+
+  # Опционально: OmniVoice TTS с клонированием голоса
+  # omnivoice:
+  #   image: ghcr.io/omniv/omnivoice:latest
+  #   ports: ["8880:8880"]
+  #   volumes: ["omnivoice:/data"]
+  #   restart: unless-stopped
+
+  # Опционально: мониторинг (Grafana :3000, admin/admin)
+  # prometheus:
+  #   image: prom/prometheus:latest
+  #   ports: ["9090:9090"]
+  #   volumes:
+  #     - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+  #   restart: unless-stopped
+  # grafana:
+  #   image: grafana/grafana:latest
+  #   ports: ["3000:3000"]
+  #   volumes: ["grafana:/var/lib/grafana"]
+  #   restart: unless-stopped
+
+volumes:
+  ollama:
+  sd:
+  grafana:

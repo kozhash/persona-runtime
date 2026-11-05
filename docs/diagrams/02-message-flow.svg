@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1020 880" width="100%" role="img" aria-label="message flow">
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/>
+  </marker>
+</defs>
+<rect width="100%" height="100%" fill="#f8fafc"/>
+<style>
+  text { font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif; }
+  .t { font-size: 19px; font-weight: 650; fill: #172033; }
+  .l { font-size: 13.5px; font-weight: 600; fill: #172033; }
+  .s { font-size: 11.5px; fill: #5b6475; }
+  .m { font-size: 12px; fill: #172033; }
+  .n { stroke: #64748b; stroke-width: 1.2; }
+  .e { stroke: #64748b; stroke-width: 1.4; fill: none; marker-end: url(#arrow); }
+  .ed { stroke: #64748b; stroke-width: 1.2; fill: none; stroke-dasharray: 5 4;
+        marker-end: url(#arrow); }
+  .zone { fill: none; stroke: #64748b; stroke-width: 1; stroke-dasharray: 7 5; opacity: .65; }
+</style>
+<text class="t" x="30" y="36">Поток одного сообщения</text>
+<text class="s" x="30" y="56">От апдейта TDLib до отправки ответа и записи в память.</text>
+<rect class="n" x="300" y="84" width="420" height="56" rx="8" fill="#fde68a"/>
+<text class="l" x="312" y="104">tdjson receive</text>
+<text class="s" x="312" y="120">отдельный поток, блокирующий вызов</text>
+<rect class="n" x="300" y="154" width="420" height="56" rx="8" fill="#bfdbfe"/>
+<text class="l" x="312" y="174">_process_new_message</text>
+<text class="s" x="312" y="190">текст / войс / фото / стикер</text>
+<path class="e" d="M 510 140 C 510 147.0, 510 147.0, 510 154"/>
+<rect class="n" x="300" y="224" width="420" height="56" rx="8" fill="#c7d2fe"/>
+<text class="l" x="312" y="244">handle_message</text>
+<text class="s" x="312" y="260">команда? echo? ночь?</text>
+<path class="e" d="M 510 210 C 510 217.0, 510 217.0, 510 224"/>
+<rect class="n" x="300" y="294" width="420" height="56" rx="8" fill="#c7d2fe"/>
+<text class="l" x="312" y="314">_full_reply</text>
+<text class="s" x="312" y="330">основной конвейер</text>
+<path class="e" d="M 510 280 C 510 287.0, 510 287.0, 510 294"/>
+<rect class="n" x="300" y="364" width="420" height="56" rx="8" fill="#99f6e4"/>
+<text class="l" x="312" y="384">diary.flash()</text>
+<text class="s" x="312" y="400">2 пути: слова + ассоциации</text>
+<path class="e" d="M 510 350 C 510 357.0, 510 357.0, 510 364"/>
+<rect class="n" x="300" y="434" width="420" height="56" rx="8" fill="#e2e8f0"/>
+<text class="l" x="312" y="454">persona.build()</text>
+<text class="s" x="312" y="470">7 слоёв промпта</text>
+<path class="e" d="M 510 420 C 510 427.0, 510 427.0, 510 434"/>
+<rect class="n" x="300" y="504" width="420" height="56" rx="8" fill="#fde68a"/>
+<text class="l" x="312" y="524">_chat_with_tools()</text>
+<text class="s" x="312" y="540">до 4 шагов function-calling</text>
+<path class="e" d="M 510 490 C 510 497.0, 510 497.0, 510 504"/>
+<rect class="n" x="300" y="574" width="420" height="56" rx="8" fill="#bbf7d0"/>
+<text class="l" x="312" y="594">anti_repeat</text>
+<text class="s" x="312" y="610">если ответ повторяет прошлый</text>
+<path class="e" d="M 510 560 C 510 567.0, 510 567.0, 510 574"/>
+<rect class="n" x="300" y="644" width="420" height="56" rx="8" fill="#bfdbfe"/>
+<text class="l" x="312" y="664">human typing</text>
+<text class="s" x="312" y="680">задержка + набор</text>
+<path class="e" d="M 510 630 C 510 637.0, 510 637.0, 510 644"/>
+<rect class="n" x="300" y="714" width="420" height="56" rx="8" fill="#bfdbfe"/>
+<text class="l" x="312" y="734">send_text / photo / voice</text>
+<text class="s" x="312" y="750">отправка в чат</text>
+<path class="e" d="M 510 700 C 510 707.0, 510 707.0, 510 714"/>
+<rect class="n" x="300" y="784" width="420" height="56" rx="8" fill="#99f6e4"/>
+<text class="l" x="312" y="804">_assess_emotion</text>
+<text class="s" x="312" y="820">PAD + запись в дневник</text>
+<path class="e" d="M 510 770 C 510 777.0, 510 777.0, 510 784"/>
+<rect class="n" x="40" y="84" width="220" height="56" rx="8" fill="#fecaca"/>
+<text class="l" x="52" y="104">эхо-режим</text>
+<text class="s" x="52" y="120">LLM недоступен</text>
+<path class="ed" d="M 300 112 C 300 112.0, 260 112.0, 260 112"/>
+<rect class="n" x="40" y="224" width="220" height="56" rx="8" fill="#fecaca"/>
+<text class="l" x="52" y="244">команда /status</text>
+<text class="s" x="52" y="260">владелец</text>
+<path class="ed" d="M 300 252 C 300 252.0, 260 252.0, 260 252"/>
+<rect class="n" x="760" y="364" width="230" height="56" rx="8" fill="#99f6e4"/>
+<text class="l" x="772" y="384">воспоминания</text>
+<text class="s" x="772" y="400">в контекст</text>
+<path class="ed" d="M 720 392 C 720 392.0, 760 392.0, 760 392"/>
+<rect class="n" x="760" y="504" width="230" height="56" rx="8" fill="#bbf7d0"/>
+<text class="l" x="772" y="524">скиллы</text>
+<text class="s" x="772" y="540">draw / remember</text>
+<path class="ed" d="M 720 532 C 720 532.0, 760 532.0, 760 532"/>
+<rect class="n" x="760" y="644" width="230" height="56" rx="8" fill="#99f6e4"/>
+<text class="l" x="772" y="664">сон (по расписанию)</text>
+<text class="s" x="772" y="680">NREM → REM → forget</text>
+<text class="s" x="760" y="722">запускает scheduler, не этот конвейер</text>
+</svg>

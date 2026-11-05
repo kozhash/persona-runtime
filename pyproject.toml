@@ -1,0 +1,34 @@
+[project]
+name = "persona-runtime"
+version = "0.1.0"
+description = "LLM-персонаж, живущий в Telegram через настоящий tdlib: дневник памяти, эмоции, сон, прокси, дашборд"
+requires-python = ">=3.11"
+readme = "README.md"
+dependencies = [
+    "httpx>=0.27",
+    "numpy>=1.26",
+    "fastapi>=0.110",
+    "uvicorn>=0.29",
+    "prometheus-client>=0.20",
+]
+
+[project.optional-dependencies]
+telegram = ["pytdlib>=0.1.4"]
+dev = ["pytest>=8.0", "pytest-asyncio>=0.23"]
+
+[project.scripts]
+kuni = "kuni.__main__:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["kuni*"]
+
+[tool.setuptools.package-data]
+kuni = ["dashboard/static/*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
